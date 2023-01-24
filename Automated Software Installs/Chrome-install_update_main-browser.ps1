@@ -4,53 +4,63 @@ function main(){
         [System.Windows.Forms.SendKeys]::SendWait("$key");
     }
     function default_browser(){
-        $browser = get-itempropertyvalue HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice\ -name ProgId
+        $browser = get-itempropertyvalue "HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice\" -name ProgId
         #here we go through and make this our default browser
-        keyboard '^{ESC}'; sleep 1
-        keyboard '(choose a default web browser)'; sleep 1
-        keyboard '{ENTER}'; sleep 1.5
-        keyboard '{ENTER}'; sleep 1
-        if (((get-itempropertyvalue HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice\ -name ProgId) -ne "ChromeHTML")){
-            keyboard '{TAB}'; sleep 1           
-            keyboard '{ENTER}'; sleep 1.5
-            keyboard '{ESC}'; sleep 2
-            #this makes sure even if its a new machine where stupid microsoft edge warns you that its the best
-            #keyboard '{TAB}'; sleep .6           
-            #keyboard '{ENTER}'; sleep .9
-            #keyboard '{ENTER}'; sleep .6
-            #keyboard '{ENTER}'; sleep .8
-            #keyboard '{ESC}'; sleep .8
-        }
-        if (((get-itempropertyvalue HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice\ -name ProgId) -ne "ChromeHTML")){
+        if ((systeminfo | Select-String "Microsoft Windows 10Default apps
+                " -Quiet) -eq $true){
             keyboard '^{ESC}'; sleep 1
             keyboard '(choose a default web browser)'; sleep 1
             keyboard '{ENTER}'; sleep 1.5
             keyboard '{ENTER}'; sleep 1
-            keyboard '{ENTER}'; sleep 1
-            keyboard '{ENTER}'; sleep 1
-            keyboard '{ESC}'; sleep 1
-        }
-        if (((get-itempropertyvalue HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice\ -name ProgId) -ne "ChromeHTML")){
-            keyboard '^{ESC}'; sleep 1
-            keyboard '(choose a default web browser)'; sleep 1
-            keyboard '{ENTER}'; sleep 1.5
-            keyboard '{ENTER}'; sleep 1
-            keyboard '{TAB}'; sleep 1          
-            keyboard '{ENTER}'; sleep 1
-            keyboard '{ENTER}'; sleep 1
-            keyboard '{ENTER}'; sleep 1
-            keyboard '{ESC}'; sleep 1
+            if ($browser -ne "ChromeHTML"){
+                keyboard '{TAB}'; sleep 1           
+                keyboard '{ENTER}'; sleep 1.5
+                keyboard '{ESC}'; sleep 2
             }
+            if ($browser -ne "ChromeHTML"){
+                keyboard '^{ESC}'; sleep 1
+                keyboard '(choose a default web browser)'; sleep 1
+                keyboard '{ENTER}'; sleep 1.5
+                keyboard '{ENTER}'; sleep 1
+                keyboard '{ENTER}'; sleep 1
+                keyboard '{ENTER}'; sleep 1
+                keyboard '{ESC}'; sleep 1
+            }
+            if ($browser -ne "ChromeHTML"){
+                keyboard '^{ESC}'; sleep 1
+                keyboard '(choose a default web browser)'; sleep 1
+                keyboard '{ENTER}'; sleep 1.5
+                keyboard '{ENTER}'; sleep 1
+                keyboard '{TAB}'; sleep 1          
+                keyboard '{ENTER}'; sleep 1
+                keyboard '{ENTER}'; sleep 1
+                keyboard '{ENTER}'; sleep 1
+                keyboard '{ESC}'; sleep 1
+                }
+            }
+        elseif ((systeminfo | Select-String "Microsoft Windows 11" -Quiet) -eq $true){
+            keyboard '^{ESC}'; sleep .75
+            keyboard '(Default apps)'; sleep .75
+            keyboard '{ENTER}'; sleep .75
+            keyboard '{TAB}'; sleep .75
+            keyboard '{TAB}'; sleep .75
+            keyboard '{TAB}'; sleep .75
+            keyboard '{TAB}'; sleep .75
+            keyboard '(Chrome)'; sleep .75
+            keyboard '{TAB}'; sleep .75
+            keyboard '{ENTER}'; sleep .75
+            keyboard '{ENTER}'; sleep .75
+        }
         taskkill /IM SystemSettings.exe /F
         }
     function taskbar_pin($app){
         #Now we pin this to the taskbar
-        keyboard '^{ESC}'; sleep .5
-        keyboard "($app)"; sleep 1
-        keyboard "(+{F10})"; sleep .5
-        keyboard '{UP}'; sleep .5
-        keyboard '{UP}'; sleep .5
-        keyboard '{ENTER}'; sleep .5
+        keyboard '^{ESC}'; sleep .75
+        keyboard "($app)"; sleep .75
+        keyboard "(+{F10})"; sleep .75
+        keyboard '{UP}'; sleep .75
+        keyboard '{UP}'; sleep .75
+        keyboard '{ENTER}'; sleep .75
         keyboard '{ESC}'
     }
     #here we define variables
