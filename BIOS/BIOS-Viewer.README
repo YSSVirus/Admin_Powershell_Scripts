@@ -1,5 +1,61 @@
-This script will pull BIOS info for the following manufacturers
-Lenovo
-Dell (Within the last 6 years)
-HP
+# BIOS Settings Retrieval Script
 
+This PowerShell script is designed to retrieve BIOS settings from computers manufactured by Dell, HP, or Lenovo. It automatically detects the manufacturer of the computer and uses the appropriate method to retrieve BIOS settings.
+
+## Prerequisites
+
+Before using this script, you should ensure that the following prerequisites are met:
+
+1. **PowerShell Execution Policy**: Ensure that the PowerShell execution policy is set to Unrestricted to allow script execution. You can set it by running the following command:
+
+   ```powershell
+   Set-ExecutionPolicy Unrestricted -Force
+   ```
+
+2. **NuGet Package Provider**: The script requires the NuGet package provider to be installed. If it's not already installed, the script will attempt to install it automatically.
+
+3. **DellBIOSProvider Module (for Dell)**: If you are using a Dell computer, the script requires the `DellBIOSProvider` module. If it's not installed, the script will attempt to install it automatically.
+
+4. **Visual C++ Redistributable Modules**: For Dell computers, the script also installs Visual C++ Redistributable modules. These are essential for some Dell BIOS functions.
+
+## Usage
+
+1. Clone or download the script from this GitHub repository.
+
+2. Open a PowerShell terminal and navigate to the folder containing the script.
+
+3. Run the script by executing the script file. The script will automatically detect the manufacturer of your computer (Dell, HP, or Lenovo) and retrieve the BIOS settings.
+
+   ```powershell
+   .\Retrieve-BIOS-Settings.ps1
+   ```
+
+4. The script will output the BIOS settings, which include the setting name, its current value, and, for some manufacturers, the available values.
+
+## Supported Manufacturers
+
+This script supports the following computer manufacturers:
+
+- **Dell**: Retrieves BIOS settings using the `DellBIOSProvider` module. For Dell computers, the script will also install Visual C++ Redistributable modules if necessary.
+
+- **HP**: Retrieves BIOS settings using the `Get-WmiObject` cmdlet in the `root/hp/instrumentedBIOS` namespace.
+
+- **Lenovo**: Retrieves BIOS settings using the `gwmi` cmdlet in the `root\wmi` namespace.
+
+## Important Notes
+
+- The script may require administrator privileges to access and retrieve BIOS settings, especially for Dell and Lenovo computers.
+
+- For Dell computers, the script sets the execution policy to Unrestricted, installs required modules, retrieves BIOS settings, and then sets the execution policy back to Default. If an error occurs, it will revert to Default and uninstall the `DellBIOSProvider` module.
+
+- The script may produce various output based on the manufacturer and BIOS settings available on your computer. The retrieved settings are displayed with their corresponding values.
+
+## Error Handling
+
+The script is designed to handle errors gracefully. If it encounters any issues, it will attempt to provide informative error messages and, where applicable, revert changes to the system.
+
+---
+
+**Note:** This script is provided as-is, and the behavior may vary based on system configurations and BIOS versions. Use it with caution and ensure that it aligns with your system's requirements. The script was tested and functional as of its last update.
+
+[**Download Script**](#) | [**Report Issues**](#)
