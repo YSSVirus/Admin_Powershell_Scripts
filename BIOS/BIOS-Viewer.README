@@ -1,6 +1,6 @@
-##BIOS Settings Retrieval Script
+BIOS Settings Retrieval Script
 
-## This PowerShell script is designed to retrieve BIOS settings from computers manufactured by Dell, HP, or Lenovo. It automatically detects the manufacturer of the computer and uses the appropriate method to retrieve BIOS settings.
+This PowerShell script is designed to retrieve BIOS settings from computers manufactured by Dell, HP, or Lenovo. It automatically detects the manufacturer of the computer and uses the appropriate method to retrieve BIOS settings.
 
 **Usage**
 
