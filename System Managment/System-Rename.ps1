@@ -173,4 +173,5 @@ Start-Sleep -Seconds 10
 
 # Log and Exit with Error
 Add-Content -Path "$log_file" -Content "Unhandled Exception"
+
 exit 1
