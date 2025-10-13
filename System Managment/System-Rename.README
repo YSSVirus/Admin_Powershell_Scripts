@@ -1,15 +1,16 @@
-# Readme File For System-Rename.ps1
+Readme File For System-Rename.ps1
 
-## Purpose
+Purpose:
 This will change the hostname of either the local or a remote computer.
 
-### How To Run:
+How To Run:
 This can run with either arguments or it will prompt you for a new hostname if none are given
 ** Example ** -> .\Rename-Computer.ps1 -name_new "NEWPC"
 ** Example ** -> .\Rename-Computer.ps1 -name_new "NEWPC" -reboot
 ** Example ** -> .\Rename-Computer.ps1 -name_new "NEWPC" -name_old "OLDPC" -reboot
 
-### Arguments:
+Arguments:
 ** -name_new ** -> The new name of the system
 ** -name_remote ** -> The name of the old system (Only for)
 ** -reboot ** -> Whether to Reboot automaticly, default is no
+
