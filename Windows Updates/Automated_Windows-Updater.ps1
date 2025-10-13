@@ -1,6 +1,12 @@
-$DeploymentScripts = "C:\TRNSFRM\Deployment-Scripts"
-$DeploymentFlags = "C:\TRNSFRM\Deployment-Flags"
-$Deployment_Log = "C:\TRNSFRM\AutoUpdate.log"
+$auto_Update_folder = "C:\Auto_Update"
+$DeploymentScripts = "$auto_Update_folder\Deployment-Scripts"
+$DeploymentFlags = "$auto_Update_folder\Deployment-Flags"
+$Deployment_Log = "$auto_Update_folder\AutoUpdate.log"
+
+New-Item -Path "$auto_Update_folder" -ItemType Directory -Force
+New-Item -Path "$DeploymentScripts" -ItemType Directory -Force
+New-Item -Path "$DeploymentFlags" -ItemType Directory -Force
+New-Item -Path "$Deployment_Log" -ItemType File -Force
 
 $host.UI.RawUI.WindowTitle = "Windows Updates"
 
@@ -28,11 +34,11 @@ Import-Module PSWindowsUpdate
 $Update = Get-WindowsUpdate
 Install-WindowsUpdate -AcceptAll -AutoReboot
 
-if (!(Test-Path "C:\TRNSFRM\AutoUpdate.log")) {
+if (!(Test-Path "C:\Auto_Update\AutoUpdate.log")) {
     Write-Host "Windows Auto Update Log:`n`n" > "$Deployment_Log"
 }
 if (!($Update -eq $NULL)) {
-	Write-Host "$Update" >> "C:\TRNSFRM\AutoUpdate.log"
+	Write-Host "$Update" >> "C:\Auto_Update\AutoUpdate.log"
     Write-Host 'Restart-Computer -Force' >> "$Deployment_Log"
     Restart-Computer -Force
 }
