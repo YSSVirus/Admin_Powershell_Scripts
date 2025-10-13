@@ -9,7 +9,7 @@ function main(){ #This is our main function for organization
 	function Removing_Old_Zoom(){ #This will uninstall any old Zoom version avoiding side by side issues
 		$zip_path = "C:\temp_zoom\CleanZoom.zip"
 		$exe_path = "C:\temp_zoom\CleanZoom.exe"
-		$Zoom_Uninstaller = "https://support.zoom.us/hc/en-us/article_attachments/360084068792/CleanZoom.zip"
+		$Zoom_Uninstaller = "https://assets.zoom.us/docs/msi-templates/CleanZoom.zip"
 		$Zoom_Uninstaller_Path = "C:\temp_zoom\CleanZoom.zip"
 		$command = "invoke-webrequest" + " -uri " + "$Zoom_Uninstaller" + " -OutFile " + "$zip_path"
 		Try {
