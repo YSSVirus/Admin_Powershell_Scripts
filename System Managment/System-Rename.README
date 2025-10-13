@@ -11,6 +11,7 @@ This can run with either arguments or it will prompt you for a new hostname if n
 
 Arguments:
 ** -name_new ** -> The new name of the system
-** -name_remote ** -> The name of the old system (Only for)
+** -name_remote ** -> The name of the old system (Only for Remote Computers)
 ** -reboot ** -> Whether to Reboot automaticly, default is no
+
 
