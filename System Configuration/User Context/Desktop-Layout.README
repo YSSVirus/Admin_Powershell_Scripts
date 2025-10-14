@@ -1,0 +1,25 @@
+Readme File For Desktop-Layout.ps1
+
+Purpose:
+This script mirrors desktop layouts by exporting or applying desktop registry configurations.
+
+Required Permissions:
+Local Admin or Higher
+
+How To Run:
+This script can run with arguments to either export the current desktop layout or apply a previously exported layout. If no parameters are given, it defaults to exporting the current desktop layout.
+
+Examples:
+.\Desktop-Layout.ps1 -get_desktop
+.\Desktop-Layout.ps1 -apply_desktop
+.\Desktop-Layout.ps1 -apply_desktop -reg_key_location "C:\Reg_Files"
+
+Arguments:
+-get_desktop        -> Exports the current desktop layout registry keys.
+-apply_desktop      -> Applies a desktop layout from previously exported registry keys.
+-reg_key_location   -> Location where registry keys will be exported to or imported from. Default is C:\Windows\Temp\Desktop-Layout_keys.
+
+Notes:
+- Logs are saved to C:\Windows\Temp\Desktop-Layout.log
+- The script will automatically handle missing parameters and conflicts, defaulting to export mode if necessary.
+- Supports Windows 10 and Windows 11.
