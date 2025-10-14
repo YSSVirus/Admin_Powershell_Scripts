@@ -1,0 +1,23 @@
+Readme File For Control-usbStorage.ps1
+
+Purpose:
+This can either enable or disable USB storage access.
+
+Required Permissions:
+Local Admin or Higher
+
+How To Run:
+This script can be run with the -disable or the -enable arguments to do the corrosponding action
+
+Examples:
+.\Desktop-Layout.ps1 -disable
+.\Desktop-Layout.ps1 -enable
+
+Arguments:
+-disable        -> Disables USB Storage.
+-enable         -> Enable USB Storage.
+
+Notes:
+- Logs are saved to C:\Windows\Temp\Control-usbStorage.log
+- The script will error if no arguments are given or has incorrect permissions
+- Supports Windows 10 and Windows 11.
