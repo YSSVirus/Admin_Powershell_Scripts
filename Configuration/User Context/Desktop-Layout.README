@@ -4,7 +4,7 @@ Purpose:
 This script mirrors desktop layouts by exporting or applying desktop registry configurations.
 
 Required Permissions:
-Local Admin or Higher
+Any
 
 How To Run:
 This script can run with arguments to either export the current desktop layout or apply a previously exported layout. If no parameters are given, it defaults to exporting the current desktop layout.

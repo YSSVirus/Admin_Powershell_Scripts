@@ -3,15 +3,23 @@ Readme File For System-Rename.ps1
 Purpose:
 This will change the hostname of either the local or a remote computer.
 
+Required Permissions:
+Local Admin or Higher
+
 How To Run:
 This can run with either arguments or it will prompt you for a new hostname if none are given
-** Example ** -> .\Rename-Computer.ps1 -name_new "NEWPC"
-** Example ** -> .\Rename-Computer.ps1 -name_new "NEWPC" -reboot
-** Example ** -> .\Rename-Computer.ps1 -name_new "NEWPC" -name_old "OLDPC" -reboot
+
+Examples:
+.\Rename-Computer.ps1 -name_new "NEWPC"
+.\Rename-Computer.ps1 -name_new "NEWPC" -reboot
+.\Rename-Computer.ps1 -name_new "NEWPC" -name_old "OLDPC" -reboot
 
 Arguments:
-** -name_new ** -> The new name of the system
-** -name_remote ** -> The name of the old system (Only for Remote Computers)
-** -reboot ** -> Whether to Reboot automaticly, default is no
+-name_new      -> The new name of the system
+-name_remote   -> The name of the old system (Only for)
+-reboot        -> Whether to Reboot automaticly, default is no
 
-
+Notes:
+- Logs are saved to C:\Windows\Temp\System-Rename.log
+- The script will automatically handle missing parameters and conflicts, defaulting to export mode if necessary.
+- Supports Windows 10 and Windows 11.

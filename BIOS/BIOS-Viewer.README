@@ -8,4 +8,6 @@ Local Admin or Higher
 
 How To Run:
 This runs with no arguments
-Example -> .\BIOS-Viewer.ps1
+
+Example:
+.\BIOS-Viewer.ps1
