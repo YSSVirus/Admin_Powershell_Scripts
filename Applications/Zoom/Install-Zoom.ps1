@@ -1,5 +1,5 @@
 param (
-    [bool] attempt_install_machine_wide = $true
+    [bool] attempt_install_machine_wide = $true # This will attempt a machine wide installation, however if the user doesnt have permissions it falls back to a per user install, you can also toggle it with this option
 )
 
 function message-log() {
