@@ -262,7 +262,7 @@ else {
 # Install
 if ($user_role_admin -and $attempt_install_machine_wide) {
     $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
-    msiexec /i "$file_download_path" /quiet
+    msiexec /i "$file_download_path" /qn
     $process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
 }
 
