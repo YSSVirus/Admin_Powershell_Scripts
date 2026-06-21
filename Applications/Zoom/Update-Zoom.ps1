@@ -229,7 +229,7 @@ function install-verify {
 folder_yss_verify -exit_on_error $true
 
 if ((Test-Path "C:\YSS\Logs\Install-Zoom.log") -eq $true) {
-    Remove-Item "C:\YSS\Logs\Install-Zoom.log" -Force
+    Remove-Item "C:\YSS\Logs\Install-Zoom.log" -Force -ErrorAction SilentlyContinue
 }
 
 $application_installed, $application_version = install-verify "Zoom"
@@ -274,16 +274,16 @@ else {
 }
 
 # Install
-$process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
-
 if ($user_role_admin -and $attempt_install_machine_wide) {
+    $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
     msiexec /i "$file_download_path" /quiet
+    $process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
 }
 else {
+    $process_current_list = process-monitornew -process_name "zoom" -scan_only $true
     Start-Process "$file_download_path" -ArgumentList "/silent"
+    $process_current_id = process-monitornew -process_name "zoom" -scan_only $false -process_id_info_old $process_current_list
 }
-
-$process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
 
 if ($process_current_id -eq $false) {
     message-log "Installer couldnt be found running. exiting" -message_type "error"
