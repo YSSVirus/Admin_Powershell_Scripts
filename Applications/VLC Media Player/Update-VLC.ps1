@@ -1,7 +1,3 @@
-param (
-    [bool] $attempt_install_machine_wide = $true # This will attempt a machine wide installation, however if the user doesnt have permissions it falls back to a per user install, you can also toggle it with this option
-)
-
 function message-log() {
     param (
         [string] $message_input,
@@ -88,6 +84,10 @@ function file_download() {
         New-Item -Path $file_folder -ItemType Directory -Force | Out-Null
     }
 
+    # if already exists
+    if ((Test-Path $file_location) -eq $true) {
+        Remove-item "$file_location" -Force
+    }
 
 
     # File Download
@@ -106,20 +106,12 @@ function file_download() {
                     ## Attempt retry and output that it failed
                     Start-Sleep -Seconds $retry_delay_seconds
                 }
-                else {
-                    $file_location = $false
-                }
             }
         }
 
     }
 
-    # Verify the file was created
-    if ((Test-Path $file_location) -eq $false) {
-        $file_location = $false
-    }
-
-    return "$file_location"
+    return $file_location
 }
 
 function process-monitornew() {
@@ -250,22 +242,18 @@ if ($version_mapped -eq $application_version) {
 
 $user_role_admin = admin-check
 
-if ($user_role_admin -and $attempt_install_machine_wide) {
-    $installer_url = "$installer_url_msi"
-    $installer_name = "VLC.msi"
-}
+$installer_url = "$installer_url_msi"
+$installer_name = "VLC.msi"
 
 # Download
 $mirror_msi = Resolve-VlcMirror $installer_url_msi
 
-if ($user_role_admin -and $attempt_install_machine_wide) {
-    $installer_url = "$mirror_msi"
-    $installer_name = "VLC.msi"
-}
+$installer_url = "$mirror_msi"
+$installer_name = "VLC.msi"
 
 $file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
-if ($file_download_path -eq $false) {
+if ($file_exists -eq $false) {
     message-log "VLC installer could not be detected after attempted download (Location: $file_download_path)" -message_type "error"
     exit 1
 }
@@ -276,12 +264,7 @@ else {
 # Install
 $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
 
-if ($user_role_admin -and $attempt_install_machine_wide) {
-    msiexec /i "$file_download_path" /qn
-}
-else {
-    Start-Process "$file_download_path" -ArgumentList "/silent"
-}
+msiexec /i "$file_download_path" /qn
 
 $process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
 
