@@ -277,7 +277,7 @@ else {
 $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
 
 if ($user_role_admin -and $attempt_install_machine_wide) {
-    msiexec /i "$file_download_path" /quiet
+    msiexec /i "$file_download_path" /qn
 }
 else {
     Start-Process "$file_download_path" -ArgumentList "/silent"
