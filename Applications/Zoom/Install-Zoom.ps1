@@ -1,3 +1,7 @@
+param (
+    [bool] attempt_install_machine_wide = $true
+)
+
 function message-log() {
     param (
         [string] $message_input,
@@ -36,6 +40,17 @@ function folder_yss_verify() {
             exit 1
         }
     }
+}
+
+function admin-check {
+    if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        $user_role_admin = $true
+    }
+    else {
+        $user_role_admin = $false
+    }
+
+    return $user_role_admin
 }
 
 function file_download() {
@@ -200,6 +215,15 @@ if ($application_installed -eq $true) {
 }
 else {
     message-log "Zoom is not installed, continuing"
+}
+
+$user_role_admin = admin-check
+
+if ($user_role_admin -and $attempt_install_machine_wide) {
+    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64"
+}
+else {
+    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.exe?archType=x64"
 }
 
 # Download
