@@ -118,11 +118,8 @@ function process-monitornew() {
     param (
         [string] $process_name,
         [bool] $scan_only = $false,
-        [string] $process_id_info_old,
-        [int] $delay_check_seconds = 10
+        [string] $process_id_info_old
     )
-
-    Start-Sleep -seconds $delay_check_seconds
 
     if ($scan_only -eq $true) {
         $process_id_info = (Get-Process | where-object {$_.ProcessName -like "*$process_name*"}).id
@@ -201,7 +198,7 @@ function install-verify {
     }
 
 
-    return $application_installed, $application_version
+    return $application_installed
 }
 
 
@@ -220,7 +217,7 @@ if ($user_role_admin -eq $false) {
     exit 1
 }
 
-$application_installed, $application_version = install-verify "VLC"
+$application_installed = install-verify "VLC"
 
 if ($application_installed -eq $false) {
     message-log "VLC is not installed, installing now"
@@ -282,7 +279,7 @@ if ((Test-Path $file_download_path) -eq $true) {
     Remove-Item "$file_download_path" -Force | Out-Null
 }
 
-$application_installed, $application_version = install-verify "VLC"
+$application_installed = install-verify "VLC"
 
 if ($application_installed -eq $true) {
     message-log "VLC is installed" -message_type "success"
