@@ -227,7 +227,7 @@ else {
 }
 
 # Download
-$file_download_path = file_download -file_url "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64" -file_folder "C:\YSS\Installers" -file_name "Zoom.msi"
+$file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "Zoom.msi"
 
 if ($file_download_path -eq $false) {
     
