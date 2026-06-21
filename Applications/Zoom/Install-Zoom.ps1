@@ -1,3 +1,7 @@
+param (
+    [bool] attempt_install_machine_wide = $true # This will attempt a machine wide installation, however if the user doesnt have permissions it falls back to a per user install, you can also toggle it with this option
+)
+
 function message-log() {
     param (
         [string] $message_input,
@@ -36,6 +40,17 @@ function folder_yss_verify() {
             exit 1
         }
     }
+}
+
+function admin-check {
+    if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        $user_role_admin = $true
+    }
+    else {
+        $user_role_admin = $false
+    }
+
+    return $user_role_admin
 }
 
 function file_download() {
@@ -202,8 +217,17 @@ else {
     message-log "Zoom is not installed, continuing"
 }
 
+$user_role_admin = admin-check
+
+if ($user_role_admin -and $attempt_install_machine_wide) {
+    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64"
+}
+else {
+    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.exe?archType=x64"
+}
+
 # Download
-$file_download_path = file_download -file_url "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64" -file_folder "C:\YSS\Installers" -file_name "Zoom.msi"
+$file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "Zoom.msi"
 
 if ($file_download_path -eq $false) {
     
