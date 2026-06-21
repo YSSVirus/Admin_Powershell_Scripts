@@ -115,8 +115,11 @@ function process-monitornew() {
     param (
         [string] $process_name,
         [bool] $scan_only = $false,
-        [string] $process_id_info_old
+        [string] $process_id_info_old,
+        [int] $delay_check_seconds = 10
     )
+
+    Start-Sleep -seconds $delay_check_seconds
 
     if ($scan_only -eq $true) {
         $process_id_info = (Get-Process | where-object {$_.ProcessName -like "*$process_name*"}).id
@@ -232,7 +235,7 @@ else {
 $file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
 if ($file_download_path -eq $false) {
-    message-log "Zoom installer could not be detected after attempted download (Location: $file_download_path)" -message_type "error"
+    message-log "Zoom installer could not be detected after attempted download (Location: $file_download_path) (Installer url: $installer_url)" -message_type "error"
     exit 1
 }
 else {
@@ -259,7 +262,7 @@ else {
     message-log "Installer Started"
 }
 
-process-monitorend -process_id "$process_current_id" --max_minutes 15 --check_interval_seconds 5
+process-monitorend -process_id "$process_current_id" -max_minutes 15 -check_interval_seconds 5
 
 if ($process_current_id -eq $false) {
     message-log "Installer never ended. exiting" -message_type "error"
