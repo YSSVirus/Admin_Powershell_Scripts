@@ -84,6 +84,10 @@ function file_download() {
         New-Item -Path $file_folder -ItemType Directory -Force | Out-Null
     }
 
+    # if already exists
+    if ((Test-Path $file_location) -eq $true) {
+        Remove-item "$file_location" -Force
+    }
 
 
     # File Download
@@ -102,20 +106,12 @@ function file_download() {
                     ## Attempt retry and output that it failed
                     Start-Sleep -Seconds $retry_delay_seconds
                 }
-                else {
-                    $file_location = $false
-                }
             }
         }
 
     }
 
-    # Verify the file was created
-    if ((Test-Path $file_location) -eq $false) {
-        $file_location = $false
-    }
-
-    return "$file_location"
+    return $file_location
 }
 
 function process-monitornew() {
@@ -242,17 +238,15 @@ $installer_url_msi = 'https:' + ($installer_links.Links | Where-Object { $_.href
 
 $mirror_msi = Resolve-VlcMirror $installer_url_msi
 
-if ($user_role_admin) {
-    $installer_url = "$mirror_msi"
-    $installer_name = "VLC.msi"
-}
+$installer_url = "$mirror_msi"
+$installer_name = "VLC.msi"
 
 $file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
 message-log "VLC installer download info (Location: $file_download_path) (Installer url: $installer_url)"
 
-if ($file_download_path -eq $false) {
-    message-log "VLC installer could not be detected after attempted download (Location: $file_download_path) (Installer url: $installer_url)" -message_type "error"
+if ($file_exists -eq $false ) {
+    message-log "VLC installer could not be detected after attempted download (Location: $file_download_path) (Installer url (Direct-mirror): $installer_url)" -message_type "error"
     exit 1
 }
 else {
@@ -260,11 +254,10 @@ else {
 }
 
 # Install
-if ($user_role_admin -and $attempt_install_machine_wide) {
-    $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
-    msiexec /i "$file_download_path" /qn
-    $process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
-}
+$process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
+msiexec /i "$file_download_path" /qn
+$process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
+
 
 if ($process_current_id -eq $false) {
     message-log "Installer couldnt be found running. exiting" -message_type "error"
