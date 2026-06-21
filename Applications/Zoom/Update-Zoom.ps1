@@ -255,28 +255,34 @@ $user_role_admin = admin-check
 
 if ($user_role_admin -and $attempt_install_machine_wide) {
     $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64"
+    $installer_name = "zoom.msi"
 }
 else {
     $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.exe?archType=x64"
+    $installer_name = "zoom.exe"
 }
 
 # Download
-$file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "Zoom.msi"
+$file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
 if ($file_download_path -eq $false) {
-    
-}
-elseif ((Test-Path "$file_download_path") -eq $true) {
-    message-log "Zoom downloaded"
-}
-else {
     message-log "Zoom installer could not be detected after attempted download (Location: $file_download_path)" -message_type "error"
     exit 1
+}
+else {
+    message-log "Zoom downloaded"
 }
 
 # Install
 $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
-msiexec /i "$file_download_path" /quiet
+
+if ($user_role_admin -and $attempt_install_machine_wide) {
+    msiexec /i "$file_download_path" /quiet
+}
+else {
+    Start-Process "$file_download_path" -ArgumentList "/silent"
+}
+
 $process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
 
 if ($process_current_id -eq $false) {
