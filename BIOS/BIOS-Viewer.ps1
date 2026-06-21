@@ -1,3 +1,28 @@
+function message-log() {
+    param (
+        [string] $message_input,
+        [string] $message_type = "info",
+        [string] $file_log = "C:\YSS\Logs\Install-Zoom.log"
+    )
+
+    if ($message_type -eq "info") {
+        $message_prefix = "INFO - "
+    }
+    elseif ($message_type -eq "success") {
+        $message_prefix = "SUCCESS - "
+    }
+    elseif ($message_type -eq "error") {
+        $message_prefix = "ERROR - "
+    }
+    elseif ($message_type -eq "warning") {
+        $message_prefix = "WARNING - "
+    }
+    $message_full = $message_prefix + $message_input
+
+    Write-Output "$message_full"
+    Write-Output "$message_full" >> "$file_log"
+}
+
 Function Get_HP_BIOS_Settings() {
     $Script:Get_BIOS_Settings = Get-WmiObject -Namespace root/hp/instrumentedBIOS -Class hp_biosEnumeration -ErrorAction SilentlyContinue |  % { New-Object psobject -Property @{   
     Setting = $_."Name"
@@ -24,25 +49,25 @@ Function Get_Dell_BIOS_Settings() {
             New-Item -Path $Path -ItemType "Directory" -Force -ErrorAction "SilentlyContinue" > $null
         }
         Else {
-            Write-Host "Directory already made"
+            message-log "Directory already made"
         }
         If (!(Get-PSRepository -Name "$Repository")) { #Checks to see if the repository is set, if not sets it
            Set-PSRepository -Name "$Repository" -InstallationPolicy "Trusted"
         }
         Else {
-            Write-Host "PSGallery already installed"
+            message-log "PSGallery already installed"
         }
         If (!(Get-Module -Name $Module -ListAvailable)) { #Checks to see if the module is installed, if not installs it
             install-Module -Name "$Module" -Force > $null
         }
         Else {
-            Write-Host "Module already Installed"
+            message-log "Module already Installed"
         }
 
         #Installs Visual studio C++ modules
         $Redists = Get-VcList | Save-VcRedist -Path $Path | Install-VcRedist -Silent
         
-        Write-Host "Installed Visual C++ Redistributables:"
+        message-log "Installed Visual C++ Redistributables:"
         $Redists | Select-Object -Property "Name", "Release", "Architecture", "Version" -Unique
     }
 
@@ -52,7 +77,7 @@ Function Get_Dell_BIOS_Settings() {
             Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
             }
         Else {
-            echo "NuGet Already Installed"
+            message-log "NuGet Already Installed"
         }
         
         $WarningPreference='silentlycontinue'
@@ -61,7 +86,7 @@ Function Get_Dell_BIOS_Settings() {
             Install-Module -Name DellBIOSProvider -Force -Scope CurrentUser
         }
         Else {
-            Write-Host "DellBIOSProvider already installed"
+            message-log "DellBIOSProvider already installed"
         }
 
         Import-Module -Name DellBIOSProvider -Force | out-null
@@ -69,12 +94,12 @@ Function Get_Dell_BIOS_Settings() {
         get-command -module DellBIOSProvider | out-null
 
         if (!(Test-Path "DellSmbios:\")) {
-            Write-Error "Could not find required pathway `"DellSmbios:\`" after requirments and module`n`nThis is likely due to the machine\BIOS being to old."
+            message-log "Could not find required pathway `"DellSmbios:\`" after requirments and module`n`nThis is likely due to the machine\BIOS being to old." -message_type "error"
         }
         Else {               
             cd "DellSmbios:\UEFIvariables"
             
-            set-item .\ForcedNetworkFlag 0  
+            set-item .\ForcedNetworkFlag 0 -ErrorAction SilentlyContinue 
 
             $Script:Get_BIOS_Settings = get-childitem -path DellSmbios:\ | select-object category |
             foreach {
@@ -107,5 +132,5 @@ elseif ($Manufacturer -like "*Lenovo*") {
     Get_Lenovo_BIOS_Settings
 }
 else {
-    Write-Error "Cant Detect the following`nManufacturer: $Manufacturer"
+    message-log "Cant Detect the following`nManufacturer: $Manufacturer" -message_type "error"
 }
