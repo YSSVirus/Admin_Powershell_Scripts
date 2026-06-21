@@ -118,11 +118,8 @@ function process-monitornew() {
     param (
         [string] $process_name,
         [bool] $scan_only = $false,
-        [string] $process_id_info_old,
-        [int] $delay_check_seconds = 10
+        [string] $process_id_info_old
     )
-
-    Start-Sleep -seconds $delay_check_seconds
 
     if ($scan_only -eq $true) {
         $process_id_info = (Get-Process | where-object {$_.ProcessName -like "*$process_name*"}).id
@@ -201,7 +198,7 @@ function install-verify {
     }
 
 
-    return $application_installed, $application_version
+    return $application_installed
 }
 
 
@@ -234,13 +231,12 @@ else {
 $installer_links = Invoke-WebRequest "https://www.videolan.org/vlc/download-windows.html" -UseBasicParsing
 
 $installer_url_msi = 'https:' + ($installer_links.Links | Where-Object { $_.href -match 'win64\.msi$' }).href
-$version_mapped = ([regex]::Match($msi, 'vlc/([\d.]+)/')).Groups[1].Value   # 3.0.23
+$version_mapped = ([regex]::Match($installer_url_msi, 'vlc/([\d.]+)/')).Groups[1].Value
 
-if ($version_mapped -eq $application_version) {
+if (($version_mapped -replace '(\.0)+$','') -eq ($application_version -replace '(\.0)+$','')) {
     message-log "The latest Version of VLC (Version: $application_version) is already installed."
+    exit 0
 }
-
-$user_role_admin = admin-check
 
 $installer_url = "$installer_url_msi"
 $installer_name = "VLC.msi"
@@ -248,10 +244,7 @@ $installer_name = "VLC.msi"
 # Download
 $mirror_msi = Resolve-VlcMirror $installer_url_msi
 
-$installer_url = "$mirror_msi"
-$installer_name = "VLC.msi"
-
-$file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
+$file_download_path = file_download -file_url "$mirror_msi" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
 if ($file_exists -eq $false) {
     message-log "VLC installer could not be detected after attempted download (Location: $file_download_path)" -message_type "error"
