@@ -246,7 +246,7 @@ $mirror_msi = Resolve-VlcMirror $installer_url_msi
 
 $file_download_path = file_download -file_url "$mirror_msi" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
-if ($file_exists -eq $false) {
+if ((Test-Path $file_download_path) -eq $false) {
     message-log "VLC installer could not be detected after attempted download (Location: $file_download_path)" -message_type "error"
     exit 1
 }
