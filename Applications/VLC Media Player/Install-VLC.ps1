@@ -217,7 +217,7 @@ if ($user_role_admin -eq $false) {
     exit 1
 }
 
-$application_installed = install-verify "VLC"
+$application_installed, $application_version = install-verify "VLC"
 
 if ($application_installed -eq $false) {
     message-log "VLC is not installed, installing now"
@@ -242,7 +242,7 @@ $file_download_path = file_download -file_url "$installer_url" -file_folder "C:\
 
 message-log "VLC installer download info (Location: $file_download_path) (Installer url: $installer_url)"
 
-if ($file_exists -eq $false ) {
+if ((Test-Path $file_download_path) -eq $false) {
     message-log "VLC installer could not be detected after attempted download (Location: $file_download_path) (Installer url (Direct-mirror): $installer_url)" -message_type "error"
     exit 1
 }
@@ -279,7 +279,7 @@ if ((Test-Path $file_download_path) -eq $true) {
     Remove-Item "$file_download_path" -Force | Out-Null
 }
 
-$application_installed = install-verify "VLC"
+$application_installed, $application_version = install-verify "VLC"
 
 if ($application_installed -eq $true) {
     message-log "VLC is installed" -message_type "success"

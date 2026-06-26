@@ -6,7 +6,7 @@ function message-log() {
     param (
         [string] $message_input,
         [string] $message_type = "info",
-        [string] $file_log = "C:\YSS\Logs\Update-Zoom.log"
+        [string] $file_log = "C:\YSS\Logs\Install-Claude.log"
     )
 
     if ($message_type -eq "info") {
@@ -39,31 +39,6 @@ function folder_yss_verify() {
         if ((!(Test-Path $folder_yss)) -and ($exit_on_error -eq $true)) {
             exit 1
         }
-    }
-}
-
-function Get-ZoomFullVersions {
-    $url  = 'https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0061222'
-    $html = (Invoke-WebRequest -Uri $url -UseBasicParsing -Headers @{ 'User-Agent' = 'Mozilla/5.0' }).Content
-
-    # Boundaries of the "Upcoming release" section (if present at all).
-    $upStart = $upEnd = -1
-    $mUp = [regex]::Match($html, '<h2[^>]*>\s*Upcoming release\s*</h2>')
-    if ($mUp.Success) {
-        $upStart = $mUp.Index
-        $mNext = [regex]::Match($html.Substring($upStart + $mUp.Length), '<h2[^>]*>')
-        $upEnd = if ($mNext.Success) { $upStart + $mUp.Length + $mNext.Index } else { [int]::MaxValue }
-    }
-
-    $pattern = '(?s)<h3[^>]*>(?<date>.*?)</h3>.*?<h4>\s*Full versions\s*</h4>.*?<table[^>]*>(?<thead><thead>.*?</thead>)?.*?<tbody>(?<body>.*?)</tbody>'
-    foreach ($m in [regex]::Matches($html, $pattern)) {
-        $isUpcoming = ($upStart -ge 0 -and $m.Index -ge $upStart -and $m.Index -lt $upEnd)
-        $date  = ($m.Groups['date'].Value -replace '<[^>]+>','').Trim()
-        $heads = [regex]::Matches($m.Groups['thead'].Value,'<th[^>]*>(.*?)</th>') | ForEach-Object { ($_.Groups[1].Value -replace '<[^>]+>','').Trim() }
-        $vals  = [regex]::Matches($m.Groups['body'].Value, '<td[^>]*>(.*?)</td>')  | ForEach-Object { ($_.Groups[1].Value -replace '<[^>]+>','').Trim() }
-        $o = [ordered]@{ ReleaseDate = $date; IsUpcoming = $isUpcoming }
-        for ($i = 0; $i -lt $heads.Count; $i++) { $o[$heads[$i]] = $vals[$i] }
-        [pscustomobject]$o
     }
 }
 
@@ -222,63 +197,100 @@ function install-verify {
 
 
 # Setup and Testing
-folder_yss_verify -exit_on_error $true
-
-if ((Test-Path "C:\YSS\Logs\Update-Zoom.log") -eq $true) {
-    Remove-Item "C:\YSS\Logs\Update-Zoom.log" -Force -ErrorAction SilentlyContinue
-}
-
-$application_installed, $application_version = install-verify "Zoom"
-
-if ($application_installed -eq $false) {
-    message-log "Zoom is not installed, we can not update it - Exiting" -message_type "error"
-    exit 0 
-}
-else {
-    message-log "Zoom is installed, continuing"
-}
-
-# Version Checking
-$version_all = Get-ZoomFullVersions   # all 51 rows, newest first, nothing filtered
-$version_latest = $version_all | Where-Object {$_.isupcoming -eq $False} | Select-Object -First 1
-$version_mapped = $version_latest.Windows -replace '^(.*)\.\d+\s*\((\d+)\)$', '$1.$2'
-
-if ($version_mapped -eq $application_version) {
-    message-log "The latest Version of Zoom (Version: $application_version) is already installed."
-}
 
 $user_role_admin = admin-check
 
-if ($user_role_admin -and $attempt_install_machine_wide) {
-    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64"
-    $installer_name = "zoom.msi"
+if ($user_role_admin -eq $false) {
+    message-log "Admin is required and this user is not admin" -message_type "error"
+    exit
+}
+
+folder_yss_verify -exit_on_error $true
+
+if ((Test-Path "C:\YSS\Logs\Install-Claude.log") -eq $true) {
+    Remove-Item "C:\YSS\Logs\Install-Claude.log" -Force -ErrorAction SilentlyContinue
+}
+
+$application_installed, $application_version = install-verify "Claude"
+
+if ($application_installed -eq $true) {
+    message-log "Claude is already installed - Exiting" -message_type "error"
+    exit 0 
 }
 else {
-    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.exe?archType=x64"
-    $installer_name = "zoom.exe"
+    message-log "Claude is not installed, continuing"
 }
+
+$Target = "latest"
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+$ProgressPreference = 'SilentlyContinue'
+
+# Check for 32-bit Windows
+if (-not [Environment]::Is64BitProcess) {
+    Write-Error "Claude Code does not support 32-bit Windows. Please use a 64-bit version of Windows."
+    exit 1
+}
+
+$DOWNLOAD_BASE_URL = "https://downloads.claude.ai/claude-code-releases"
+$DOWNLOAD_DIR = "$env:USERPROFILE\.claude\downloads"
+
+# Use native ARM64 binary on ARM64 Windows, x64 otherwise
+if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
+    $platform = "win32-arm64"
+} else {
+    $platform = "win32-x64"
+}
+New-Item -ItemType Directory -Force -Path $DOWNLOAD_DIR | Out-Null
+
+# Always download latest version (which has the most up-to-date installer)
+try {
+    $version = Invoke-RestMethod -Uri "$DOWNLOAD_BASE_URL/latest" -ErrorAction Stop
+}
+catch {
+    Write-Error "Failed to get latest version: $_"
+    exit 1
+}
+
+# Reject non-version content (e.g. an HTML error page) before it reaches the manifest URL
+if ($version -notmatch '^\d+\.\d+\.\d+') {
+    Write-Error "Failed to get a valid version from downloads.claude.ai (got unexpected content). This can happen if the download service is unreachable or not available in your region - see https://www.anthropic.com/supported-countries"
+    exit 1
+}
+
+try {
+    $manifest = Invoke-RestMethod -Uri "$DOWNLOAD_BASE_URL/$version/manifest.json" -ErrorAction Stop
+    $checksum = $manifest.platforms.$platform.checksum
+
+    if (-not $checksum) {
+        Write-Error "Platform $platform not found in manifest"
+        exit 1
+    }
+}
+catch {
+    Write-Error "Failed to get manifest: $_"
+    exit 1
+}
+
+$installer_url = "$DOWNLOAD_DIR\claude-$version-$platform.exe"
+$installer_name = "Claude.exe"
 
 # Download
 $file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
 if ((Test-Path $file_download_path) -eq $false) {
-    message-log "Zoom installer could not be detected after attempted download (Location: $file_download_path) (Installer url: $installer_url)" -message_type "error"
+    message-log "Claude installer could not be detected after attempted download (Location: $file_download_path) (Installer url: $installer_url)" -message_type "error"
     exit 1
 }
 else {
-    message-log "Zoom downloaded"
+    message-log "Claude downloaded"
 }
 
 # Install
 if ($user_role_admin -and $attempt_install_machine_wide) {
-    $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
-    msiexec /i "$file_download_path" /quiet
-    $process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
-}
-else {
-    $process_current_list = process-monitornew -process_name "zoom" -scan_only $true
-    Start-Process "$file_download_path" -ArgumentList "/silent"
-    $process_current_id = process-monitornew -process_name "zoom" -scan_only $false -process_id_info_old $process_current_list
+    $process_current_list = process-monitornew -process_name "claude" -scan_only $true
+    Start-Process "$file_download_path" -ArgumentList "/S"
+    $process_current_id = process-monitornew -process_name "claude" -scan_only $false -process_id_info_old $process_current_list
 }
 
 if ($process_current_id -eq $false) {
@@ -304,13 +316,13 @@ if ((Test-Path $file_download_path) -eq $true) {
     Remove-Item "$file_download_path" -Force | Out-Null
 }
 
-$application_installed, $application_version = install-verify "Zoom"
+$application_installed, $application_version = install-verify "Claude"
 
 if ($application_installed -eq $true) {
-    message-log "Zoom is installed" -message_type "success"
+    message-log "Claude is installed (Version: $application_version)" -message_type "success"
     exit 0 
 }
 else {
-    message-log "Zoom could not be detected after attempted install" -message_type "error"
+    message-log "Claude could not be detected after attempted install" -message_type "error"
     exit 1
 }

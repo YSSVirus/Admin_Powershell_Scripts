@@ -6,7 +6,7 @@ function message-log() {
     param (
         [string] $message_input,
         [string] $message_type = "info",
-        [string] $file_log = "C:\YSS\Logs\Update-Zoom.log"
+        [string] $file_log = "C:\YSS\Logs\Install-7-zip.log"
     )
 
     if ($message_type -eq "info") {
@@ -39,31 +39,6 @@ function folder_yss_verify() {
         if ((!(Test-Path $folder_yss)) -and ($exit_on_error -eq $true)) {
             exit 1
         }
-    }
-}
-
-function Get-ZoomFullVersions {
-    $url  = 'https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0061222'
-    $html = (Invoke-WebRequest -Uri $url -UseBasicParsing -Headers @{ 'User-Agent' = 'Mozilla/5.0' }).Content
-
-    # Boundaries of the "Upcoming release" section (if present at all).
-    $upStart = $upEnd = -1
-    $mUp = [regex]::Match($html, '<h2[^>]*>\s*Upcoming release\s*</h2>')
-    if ($mUp.Success) {
-        $upStart = $mUp.Index
-        $mNext = [regex]::Match($html.Substring($upStart + $mUp.Length), '<h2[^>]*>')
-        $upEnd = if ($mNext.Success) { $upStart + $mUp.Length + $mNext.Index } else { [int]::MaxValue }
-    }
-
-    $pattern = '(?s)<h3[^>]*>(?<date>.*?)</h3>.*?<h4>\s*Full versions\s*</h4>.*?<table[^>]*>(?<thead><thead>.*?</thead>)?.*?<tbody>(?<body>.*?)</tbody>'
-    foreach ($m in [regex]::Matches($html, $pattern)) {
-        $isUpcoming = ($upStart -ge 0 -and $m.Index -ge $upStart -and $m.Index -lt $upEnd)
-        $date  = ($m.Groups['date'].Value -replace '<[^>]+>','').Trim()
-        $heads = [regex]::Matches($m.Groups['thead'].Value,'<th[^>]*>(.*?)</th>') | ForEach-Object { ($_.Groups[1].Value -replace '<[^>]+>','').Trim() }
-        $vals  = [regex]::Matches($m.Groups['body'].Value, '<td[^>]*>(.*?)</td>')  | ForEach-Object { ($_.Groups[1].Value -replace '<[^>]+>','').Trim() }
-        $o = [ordered]@{ ReleaseDate = $date; IsUpcoming = $isUpcoming }
-        for ($i = 0; $i -lt $heads.Count; $i++) { $o[$heads[$i]] = $vals[$i] }
-        [pscustomobject]$o
     }
 }
 
@@ -222,64 +197,80 @@ function install-verify {
 
 
 # Setup and Testing
-folder_yss_verify -exit_on_error $true
+$user_role_admin = admin-check
 
-if ((Test-Path "C:\YSS\Logs\Update-Zoom.log") -eq $true) {
-    Remove-Item "C:\YSS\Logs\Update-Zoom.log" -Force -ErrorAction SilentlyContinue
+if ($user_role_admin -eq $false) {
+    message-log "Admin is required and this user is not admin" -message_type "error"
+    exit
 }
 
-$application_installed, $application_version = install-verify "Zoom"
+folder_yss_verify -exit_on_error $true
 
-if ($application_installed -eq $false) {
-    message-log "Zoom is not installed, we can not update it - Exiting" -message_type "error"
+if ((Test-Path "C:\YSS\Logs\Install-7-zip.log") -eq $true) {
+    Remove-Item "C:\YSS\Logs\Install-7-zip.log" -Force -ErrorAction SilentlyContinue
+}
+
+$application_installed, $application_version = install-verify "7-zip"
+
+if ($application_installed -eq $true) {
+    message-log "7-zip is already installed - Exiting" -message_type "error"
     exit 0 
 }
 else {
-    message-log "Zoom is installed, continuing"
+    message-log "7-zip is not installed, continuing"
 }
 
-# Version Checking
-$version_all = Get-ZoomFullVersions   # all 51 rows, newest first, nothing filtered
-$version_latest = $version_all | Where-Object {$_.isupcoming -eq $False} | Select-Object -First 1
-$version_mapped = $version_latest.Windows -replace '^(.*)\.\d+\s*\((\d+)\)$', '$1.$2'
-
-if ($version_mapped -eq $application_version) {
-    message-log "The latest Version of Zoom (Version: $application_version) is already installed."
+$url = "https://www.7-zip.org/"
+$headers = @{
+    "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+    "Referer" = "https://www.7-zip.org/"
 }
 
-$user_role_admin = admin-check
+$html = (Invoke-WebRequest -Uri $url -UseBasicParsing -Headers $headers ).Content
 
-if ($user_role_admin -and $attempt_install_machine_wide) {
-    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64"
-    $installer_name = "zoom.msi"
+function Get-Cell($inner) {
+    $hm = [regex]::Match($inner, '(?i)href=[\x22\x27]([^\x22\x27]+)[\x22\x27]')
+    if ($hm.Success) {
+        try { return ([uri]::new([uri]$url, [System.Net.WebUtility]::HtmlDecode($hm.Groups[1].Value))).AbsoluteUri }
+        catch { return [System.Net.WebUtility]::HtmlDecode($hm.Groups[1].Value) }
+    }
+    return [System.Net.WebUtility]::HtmlDecode(($inner -replace '<[^>]+>','')).Trim()
 }
-else {
-    $installer_url = "https://zoom.us/client/latest/ZoomInstallerFull.exe?archType=x64"
-    $installer_name = "zoom.exe"
+
+# Find the "7-Zip" section by its heading (resilient to reordering).
+$mk = [regex]::Match($html, '(?si)<h[1-6][^>]*>[^<]*7-Zip[^<]*</h[1-6]>')
+$cells = if ($mk.Success) {
+    [regex]::Match($html.Substring($mk.Index + $mk.Length), '(?si)<table[^>]*>(?<t>.*?)</table>').Groups['t'].Value
+} else { '' }
+$heads = @([regex]::Matches($cells, '(?si)<th[^>]*>(.*?)</th>') |
+    ForEach-Object { [System.Net.WebUtility]::HtmlDecode(($_.Groups[1].Value -replace '<[^>]+>','')).Trim() })
+$rows = foreach ($row in [regex]::Matches($cells, '(?si)<tr[^>]*>(?<r>.*?)</tr>')) {
+    $vals = @([regex]::Matches($row.Groups['r'].Value, '(?si)<td[^>]*>(.*?)</td>') |
+        ForEach-Object { Get-Cell $_.Groups[1].Value })
+    if ($vals.Count -eq 0) { continue }
+    $o = [ordered]@{}
+    for ($i = 0; $i -lt $heads.Count; $i++) { $o[$heads[$i]] = $vals[$i] }
+    [pscustomobject]$o
 }
+
+$installer_url = "$($($rows).Link)"
+$installer_name = "7-zip.exe"
 
 # Download
 $file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
 if ((Test-Path $file_download_path) -eq $false) {
-    message-log "Zoom installer could not be detected after attempted download (Location: $file_download_path) (Installer url: $installer_url)" -message_type "error"
+    message-log "7-zip installer could not be detected after attempted download (Location: $file_download_path) (Installer url: $installer_url)" -message_type "error"
     exit 1
 }
 else {
-    message-log "Zoom downloaded"
+    message-log "7-zip downloaded"
 }
 
 # Install
-if ($user_role_admin -and $attempt_install_machine_wide) {
-    $process_current_list = process-monitornew -process_name "msiexec" -scan_only $true
-    msiexec /i "$file_download_path" /quiet
-    $process_current_id = process-monitornew -process_name "msiexec" -scan_only $false -process_id_info_old $process_current_list
-}
-else {
-    $process_current_list = process-monitornew -process_name "zoom" -scan_only $true
-    Start-Process "$file_download_path" -ArgumentList "/silent"
-    $process_current_id = process-monitornew -process_name "zoom" -scan_only $false -process_id_info_old $process_current_list
-}
+$process_current_list = process-monitornew -process_name "zip" -scan_only $true
+Start-Process "$file_download_path" -ArgumentList "/S"
+$process_current_id = process-monitornew -process_name "zip" -scan_only $false -process_id_info_old $process_current_list
 
 if ($process_current_id -eq $false) {
     message-log "Installer couldnt be found running. exiting" -message_type "error"
@@ -304,13 +295,13 @@ if ((Test-Path $file_download_path) -eq $true) {
     Remove-Item "$file_download_path" -Force | Out-Null
 }
 
-$application_installed, $application_version = install-verify "Zoom"
+$application_installed, $application_version = install-verify "7-zip"
 
 if ($application_installed -eq $true) {
-    message-log "Zoom is installed" -message_type "success"
+    message-log "7-zip is installed (Version: $application_version)" -message_type "success"
     exit 0 
 }
 else {
-    message-log "Zoom could not be detected after attempted install" -message_type "error"
+    message-log "7-zip could not be detected after attempted install" -message_type "error"
     exit 1
 }

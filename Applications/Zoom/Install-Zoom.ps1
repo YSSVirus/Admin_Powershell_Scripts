@@ -77,6 +77,10 @@ function file_download() {
         New-Item -Path $file_folder -ItemType Directory -Force | Out-Null
     }
 
+    # if already exists
+    if ((Test-Path $file_location) -eq $true) {
+        Remove-item "$file_location" -Force
+    }
 
 
     # File Download
@@ -95,31 +99,20 @@ function file_download() {
                     ## Attempt retry and output that it failed
                     Start-Sleep -Seconds $retry_delay_seconds
                 }
-                else {
-                    $file_location = $false
-                }
             }
         }
 
     }
 
-    # Verify the file was created
-    if ((Test-Path $file_location) -eq $false) {
-        $file_location = $false
-    }
-
-    return "$file_location"
+    return $file_location
 }
 
 function process-monitornew() {
     param (
         [string] $process_name,
         [bool] $scan_only = $false,
-        [string] $process_id_info_old,
-        [int] $delay_check_seconds = 10
+        [string] $process_id_info_old
     )
-
-    Start-Sleep -seconds $delay_check_seconds
 
     if ($scan_only -eq $true) {
         $process_id_info = (Get-Process | where-object {$_.ProcessName -like "*$process_name*"}).id
@@ -210,9 +203,9 @@ if ((Test-Path "C:\YSS\Logs\Install-Zoom.log") -eq $true) {
     Remove-Item "C:\YSS\Logs\Install-Zoom.log" -Force -ErrorAction SilentlyContinue
 }
 
-$application_installed, application_version = install-verify "Zoom"
+$application_installed, $application_version = install-verify "Zoom"
 
-if ($application_installed -eq $true) {
+if ((Test-Path $file_download_path) -eq $false) {
     message-log "Zoom is already installed - Exiting" -message_type "error"
     exit 0 
 }
@@ -234,7 +227,7 @@ else {
 # Download
 $file_download_path = file_download -file_url "$installer_url" -file_folder "C:\YSS\Installers" -file_name "$installer_name"
 
-if ($file_download_path -eq $false) {
+if ((Test-Path $file_download_path) -eq $true) {
     message-log "Zoom installer could not be detected after attempted download (Location: $file_download_path) (Installer url: $installer_url)" -message_type "error"
     exit 1
 }
@@ -277,7 +270,7 @@ if ((Test-Path $file_download_path) -eq $true) {
     Remove-Item "$file_download_path" -Force | Out-Null
 }
 
-$application_installed, application_version = install-verify "Zoom"
+$application_installed, $application_version = install-verify "Zoom"
 
 if ($application_installed -eq $true) {
     message-log "Zoom is installed (Version: $application_version)" -message_type "success"
